@@ -97,15 +97,32 @@ customer_products (customer_id, product_id, relationship_type, start_date, ...)
    cd customer-analytics-project
    ```
 
-2. **Environment setup**:
+2. **Snowflake setup** (Interactive - Recommended):
+   ```bash
+   # Run the interactive setup script
+   python scripts/setup_snowflake.py
+
+   # This will guide you through:
+   # - Creating .env file with your credentials
+   # - Validating your Snowflake connection
+   # - Testing all functionality
+   ```
+
+   **Manual setup** (Alternative):
    ```bash
    # Copy environment template
    cp .env.template .env
 
    # Edit .env with your Snowflake credentials
-   # SNOWFLAKE_ACCOUNT=your_account.region
+   # SNOWFLAKE_ACCOUNT=your_account.region.snowflakecomputing.com
    # SNOWFLAKE_USER=your_username
    # SNOWFLAKE_PASSWORD=your_password
+   # SNOWFLAKE_WAREHOUSE=your_warehouse
+   # SNOWFLAKE_DATABASE=your_database
+   # SNOWFLAKE_SCHEMA=your_schema
+
+   # Validate your setup
+   python scripts/setup_snowflake.py --validate-only
    ```
 
 3. **Docker deployment** (recommended):
@@ -133,7 +150,39 @@ customer_products (customer_id, product_id, relationship_type, start_date, ...)
 ### Verify Installation
 - **Application**: http://localhost:8000
 - **API Documentation**: http://localhost:8000/docs
-- **Health Check**: http://localhost:8000/health
+- **General Health Check**: http://localhost:8000/health
+- **Snowflake Health Check**: http://localhost:8000/api/snowflake/health
+- **Snowflake Configuration**: http://localhost:8000/api/snowflake/config
+
+### 🏔️ Snowflake Features
+
+The project includes comprehensive Snowflake integration with:
+
+#### 🔌 Connection Management
+- Automatic connection pooling and retry logic
+- Health monitoring and connection validation
+- Support for multiple authentication methods
+
+#### 📊 Data Operations
+- Execute SQL queries with parameter binding
+- Export data in multiple formats (CSV, JSON, Parquet, Excel)
+- Streaming downloads for large datasets
+- Query result caching for performance
+
+#### 🛡️ Security & Validation
+- Comprehensive configuration validation
+- Secure credential management
+- Query safety checks and timeouts
+- Role-based access control support
+
+#### 📋 API Endpoints
+- `/api/snowflake/health` - Connection health check
+- `/api/snowflake/query` - Execute SQL queries
+- `/api/snowflake/export` - Export query results
+- `/api/snowflake/tables` - List and inspect tables
+- `/api/snowflake/schemas` - List available schemas
+
+For detailed Snowflake setup instructions, see [docs/snowflake_setup.md](docs/snowflake_setup.md)
 
 ## 📋 Development Roadmap
 
