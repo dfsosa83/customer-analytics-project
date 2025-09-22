@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  customer-analytics:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: customer-analytics-api
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_NAME=${APP_NAME:-Customer Analytics API}
+      - APP_VERSION=${APP_VERSION:-0.1.0}
+      - DEBUG=${DEBUG:-false}
+      - HOST=${HOST:-0.0.0.0}
+      - PORT=${PORT:-8000}
+      - SNOWFLAKE_ACCOUNT=${SNOWFLAKE_ACCOUNT}
+      - SNOWFLAKE_USER=${SNOWFLAKE_USER}
+      - SNOWFLAKE_PASSWORD=${SNOWFLAKE_PASSWORD}
+      - SNOWFLAKE_WAREHOUSE=${SNOWFLAKE_WAREHOUSE}
+      - SNOWFLAKE_DATABASE=${SNOWFLAKE_DATABASE}
+      - SNOWFLAKE_SCHEMA=${SNOWFLAKE_SCHEMA}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - QUERY_TIMEOUT=${QUERY_TIMEOUT:-300}
+      - CONNECTION_POOL_SIZE=${CONNECTION_POOL_SIZE:-10}
+      - CACHE_TTL=${CACHE_TTL:-3600}
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    networks:
+      - analytics-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      - redis-cache
+
+  redis-cache:
+    image: redis:7-alpine
+    container_name: customer-analytics-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - analytics-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  analytics-network:
+    driver: bridge
+
+volumes:
+  redis_data:
+    driver: local
