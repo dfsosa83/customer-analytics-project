@@ -77,20 +77,34 @@ class SnowflakeConfig(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
         case_sensitive = False
+        extra = "ignore"  # Ignore extra fields from .env file
         
     @validator('snowflake_account')
     def validate_account(cls, v):
         """Validate Snowflake account format."""
         if not v:
             raise ValueError("Snowflake account is required")
-        
-        # Add .snowflakecomputing.com if not present
-        if not v.endswith('.snowflakecomputing.com'):
-            if '.' in v:  # Has region
-                v = f"{v}.snowflakecomputing.com"
-            else:
-                raise ValueError("Account must include region (e.g., 'abc12345.us-east-1')")
-        
+
+        # Handle different account formats
+        if v.endswith('.snowflakecomputing.com'):
+            return v
+
+        # If it contains a dot, assume it has region
+        if '.' in v:
+            return f"{v}.snowflakecomputing.com"
+
+        # If it's just the account identifier without region, provide helpful error
+        if len(v) > 5 and '-' in v:  # Looks like account identifier
+            raise ValueError(
+                f"Account '{v}' needs region. Common formats:\n"
+                f"  - {v}.us-east-1.snowflakecomputing.com\n"
+                f"  - {v}.us-west-2.snowflakecomputing.com\n"
+                f"  - {v}.eu-west-1.snowflakecomputing.com\n"
+                f"Check your Snowflake URL to find the correct region."
+            )
+
+        raise ValueError("Account must include region (e.g., 'abc12345.us-east-1')")
+
         return v
     
     @validator('default_export_format')
