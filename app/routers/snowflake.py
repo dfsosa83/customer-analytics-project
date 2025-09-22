@@ -22,8 +22,8 @@ from ..utils.data_export import get_data_exporter, DataExporter
 
 logger = logging.getLogger(__name__)
 
-# Create router
-router = APIRouter(prefix="/snowflake", tags=["snowflake"])
+# Create router (no prefix here since it's added in main.py)
+router = APIRouter(tags=["snowflake"])
 
 
 # Pydantic models for request/response
