@@ -19,6 +19,7 @@ from concurrent.futures import ThreadPoolExecutor
 import snowflake.connector
 from snowflake.connector import DictCursor
 from snowflake.connector.errors import Error as SnowflakeError
+from snowflake.snowpark import Session
 import pandas as pd
 
 from .snowflake_config import SnowflakeConfig, load_snowflake_config
@@ -66,7 +67,31 @@ class SnowflakeConnectionManager:
         self._last_health_check = 0
         
         logger.info("Snowflake Connection Manager initialized")
-    
+
+    def create_snowpark_session(self) -> Optional[Session]:
+        """
+        Create a Snowpark session using the working approach from experiments.
+        This is the preferred method for new connections.
+        """
+        try:
+            connection_parameters = {
+                "account": self.config.snowflake_account,
+                "user": self.config.snowflake_user,
+                "password": self.config.snowflake_password,
+                "role": self.config.snowflake_role,
+                "warehouse": self.config.snowflake_warehouse,
+                "database": self.config.snowflake_database,
+                "schema": self.config.snowflake_schema
+            }
+
+            session = Session.builder.configs(connection_parameters).create()
+            logger.info("Successfully created Snowpark session")
+            return session
+
+        except Exception as e:
+            logger.error(f"Error creating Snowpark session: {str(e)}")
+            return None
+
     def _create_connection(self) -> snowflake.connector.SnowflakeConnection:
         """
         Create a new Snowflake connection.

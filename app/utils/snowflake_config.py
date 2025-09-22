@@ -85,25 +85,12 @@ class SnowflakeConfig(BaseSettings):
         if not v:
             raise ValueError("Snowflake account is required")
 
-        # Handle different account formats
-        if v.endswith('.snowflakecomputing.com'):
+        # Accept the account as-is if it's a simple format that works
+        # This allows for the working format from experiments: XVXQZEX-AAB14864
+        if len(v) > 5:  # Basic length check
             return v
 
-        # If it contains a dot, assume it has region
-        if '.' in v:
-            return f"{v}.snowflakecomputing.com"
-
-        # If it's just the account identifier without region, provide helpful error
-        if len(v) > 5 and '-' in v:  # Looks like account identifier
-            raise ValueError(
-                f"Account '{v}' needs region. Common formats:\n"
-                f"  - {v}.us-east-1.snowflakecomputing.com\n"
-                f"  - {v}.us-west-2.snowflakecomputing.com\n"
-                f"  - {v}.eu-west-1.snowflakecomputing.com\n"
-                f"Check your Snowflake URL to find the correct region."
-            )
-
-        raise ValueError("Account must include region (e.g., 'abc12345.us-east-1')")
+        raise ValueError("Account identifier is required")
 
         return v
     

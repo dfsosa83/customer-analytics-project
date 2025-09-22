@@ -321,20 +321,20 @@ class SnowflakeValidator:
     def _check_field_formats(self) -> Tuple[bool, str, Optional[Dict]]:
         """Check if field formats are valid."""
         issues = []
-        
-        # Check account format
-        if not self.config.snowflake_account.endswith('.snowflakecomputing.com'):
-            issues.append("Account should end with '.snowflakecomputing.com'")
-        
-        # Check for common format issues
+
+        # Check for common format issues (but allow simple account format that works)
         if ' ' in self.config.snowflake_account:
             issues.append("Account identifier should not contain spaces")
-        
+
+        # Basic account format validation (allow both simple and full formats)
+        if len(self.config.snowflake_account) < 5:
+            issues.append("Account identifier is too short")
+
         if issues:
             return False, f"Format issues: {'; '.join(issues)}", {
                 'issues': issues
             }
-        
+
         return True, "Field formats are valid", None
     
     def _check_numeric_settings(self) -> Tuple[bool, str, Optional[Dict]]:
@@ -367,50 +367,121 @@ class SnowflakeValidator:
             return False, f"Failed to create connection manager: {str(e)}", None
     
     def _check_basic_connectivity(self) -> Tuple[bool, str, Optional[Dict]]:
-        """Check basic connectivity to Snowflake."""
-        result = self.connection_manager.test_connection()
-        
-        if result['success']:
-            return True, "Basic connectivity successful", result
-        else:
-            return False, f"Connectivity failed: {result.get('error', 'Unknown error')}", result
+        """Check basic connectivity to Snowflake using Snowpark session."""
+        try:
+            start_time = time.time()
+
+            # Use the working Snowpark session approach
+            session = self.connection_manager.create_snowpark_session()
+            connection_time = time.time() - start_time
+
+            if session is not None:
+                try:
+                    # Test a simple query
+                    result = session.sql("SELECT CURRENT_VERSION()").collect()
+                    version = result[0][0] if result else "Unknown"
+                    session.close()
+
+                    return True, "Basic connectivity successful", {
+                        'success': True,
+                        'connection_time': connection_time,
+                        'snowflake_version': version,
+                        'timestamp': time.time()
+                    }
+                except Exception as query_error:
+                    if session:
+                        session.close()
+                    return False, f"Query test failed: {str(query_error)}", {
+                        'success': False,
+                        'connection_time': connection_time,
+                        'error': str(query_error),
+                        'timestamp': time.time()
+                    }
+            else:
+                return False, "Failed to create Snowpark session", {
+                    'success': False,
+                    'connection_time': connection_time,
+                    'error': "Session creation failed",
+                    'timestamp': time.time()
+                }
+
+        except Exception as e:
+            return False, f"Connection failed: {str(e)}", {
+                'success': False,
+                'error': str(e),
+                'timestamp': time.time()
+            }
     
     def _check_session_info(self) -> Tuple[bool, str, Optional[Dict]]:
-        """Check session information retrieval."""
+        """Check session information retrieval using Snowpark."""
         try:
-            query = """
-                SELECT 
-                    CURRENT_USER() as current_user,
-                    CURRENT_ROLE() as current_role,
-                    CURRENT_DATABASE() as current_database,
-                    CURRENT_SCHEMA() as current_schema,
-                    CURRENT_WAREHOUSE() as current_warehouse
-            """
-            
-            result = self.connection_manager.execute_query(query)
-            
-            if result.success and result.data:
-                session_info = result.data[0]
-                return True, "Session information retrieved successfully", session_info
+            session = self.connection_manager.create_snowpark_session()
+
+            if session is not None:
+                try:
+                    query = """
+                        SELECT
+                            CURRENT_USER() as current_user,
+                            CURRENT_ROLE() as current_role,
+                            CURRENT_DATABASE() as current_database,
+                            CURRENT_SCHEMA() as current_schema,
+                            CURRENT_WAREHOUSE() as current_warehouse
+                    """
+
+                    result = session.sql(query).collect()
+                    session.close()
+
+                    if result:
+                        row = result[0]
+                        session_info = {
+                            'current_user': row[0],
+                            'current_role': row[1],
+                            'current_database': row[2],
+                            'current_schema': row[3],
+                            'current_warehouse': row[4]
+                        }
+                        return True, "Session information retrieved successfully", session_info
+                    else:
+                        return False, "No session info returned", None
+
+                except Exception as query_error:
+                    if session:
+                        session.close()
+                    return False, f"Session info query failed: {str(query_error)}", None
             else:
-                return False, f"Failed to get session info: {result.error_message}", None
-                
+                return False, "Failed to create session for info check", None
+
         except Exception as e:
             return False, f"Session info check failed: {str(e)}", None
     
     def _check_query_execution(self) -> Tuple[bool, str, Optional[Dict]]:
-        """Check simple query execution."""
+        """Check simple query execution using Snowpark."""
         try:
-            result = self.connection_manager.execute_query("SELECT 1 as test_value")
-            
-            if result.success:
-                return True, "Query execution successful", {
-                    'execution_time': result.execution_time,
-                    'row_count': result.row_count
-                }
+            session = self.connection_manager.create_snowpark_session()
+
+            if session is not None:
+                try:
+                    start_time = time.time()
+                    result = session.sql("SELECT 1 as test_value").collect()
+                    execution_time = time.time() - start_time
+                    session.close()
+
+                    if result:
+                        return True, "Query execution successful", {
+                            'execution_time': execution_time,
+                            'row_count': len(result),
+                            'test_value': result[0][0]
+                        }
+                    else:
+                        return False, "Query returned no results", None
+
+                except Exception as query_error:
+                    if session:
+                        session.close()
+                    return False, f"Query execution failed: {str(query_error)}", None
             else:
-                return False, f"Query execution failed: {result.error_message}", None
-                
+                return False, "Failed to create session for query test", None
+
         except Exception as e:
             return False, f"Query execution check failed: {str(e)}", None
     
