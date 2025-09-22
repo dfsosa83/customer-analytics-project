@@ -12,8 +12,8 @@ import os
 import logging
 from typing import Optional, Dict, Any
 from dataclasses import dataclass, field
-from pydantic import BaseSettings, validator, Field
-from pydantic_settings import BaseSettings as PydanticBaseSettings
+from pydantic import validator, Field
+from pydantic_settings import BaseSettings
 
 
 logger = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ class SnowflakeCredentials:
                 raise ValueError("Account must include region (e.g., 'abc12345.us-east-1')")
 
 
-class SnowflakeConfig(PydanticBaseSettings):
+class SnowflakeConfig(BaseSettings):
     """
     Snowflake configuration class using Pydantic for validation and environment variable loading.
     
