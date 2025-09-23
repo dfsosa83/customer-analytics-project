@@ -168,7 +168,7 @@ async def execute_query(
         if request.limit:
             query = f"SELECT * FROM ({query}) LIMIT {request.limit}"
         
-        result = connection_manager.execute_query(query, request.params)
+        result = connection_manager.execute_query_snowpark(query, request.params)
         
         if not result.success:
             raise HTTPException(status_code=400, detail=result.error_message)
@@ -307,7 +307,7 @@ async def list_tables(
             ORDER BY TABLE_NAME
         """
         
-        result = connection_manager.execute_query(query)
+        result = connection_manager.execute_query_snowpark(query)
         
         if not result.success:
             raise HTTPException(status_code=400, detail=result.error_message)
@@ -372,7 +372,7 @@ async def list_schemas(
             ORDER BY SCHEMA_NAME
         """
         
-        result = connection_manager.execute_query(query)
+        result = connection_manager.execute_query_snowpark(query)
         
         if not result.success:
             raise HTTPException(status_code=400, detail=result.error_message)

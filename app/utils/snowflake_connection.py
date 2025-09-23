@@ -92,6 +92,84 @@ class SnowflakeConnectionManager:
             logger.error(f"Error creating Snowpark session: {str(e)}")
             return None
 
+    def execute_query_snowpark(self, query: str, params: Optional[Dict] = None,
+                              fetch_size: Optional[int] = None) -> QueryResult:
+        """
+        Execute a SQL query using Snowpark session (working approach).
+
+        Args:
+            query: SQL query to execute
+            params: Query parameters (not used in Snowpark)
+            fetch_size: Maximum number of rows to fetch
+
+        Returns:
+            QueryResult with data and metadata
+        """
+        start_time = time.time()
+
+        try:
+            session = self.create_snowpark_session()
+            if session is None:
+                raise Exception("Failed to create Snowpark session")
+
+            logger.info(f"Executing query via Snowpark: {query[:100]}...")
+
+            # Execute query
+            snow_df = session.sql(query)
+
+            # Apply limit if specified
+            if fetch_size:
+                snow_df = snow_df.limit(fetch_size)
+            elif self.config.max_query_rows:
+                snow_df = snow_df.limit(self.config.max_query_rows)
+
+            # Collect results
+            results = snow_df.collect()
+
+            # Convert to list of dictionaries
+            data = []
+            columns = []
+
+            if results:
+                # Get column names from first row
+                first_row = results[0]
+                columns = list(first_row.as_dict().keys())
+
+                # Convert all rows to dictionaries
+                for row in results:
+                    data.append(row.as_dict())
+
+            execution_time = time.time() - start_time
+
+            logger.info(f"Query executed successfully in {execution_time:.2f}s, returned {len(data)} rows")
+
+            session.close()
+
+            return QueryResult(
+                data=data,
+                row_count=len(data),
+                execution_time=execution_time,
+                query=query,
+                columns=columns,
+                success=True,
+                error_message=None
+            )
+
+        except Exception as e:
+            execution_time = time.time() - start_time
+            error_msg = str(e)
+            logger.error(f"Query execution failed after {execution_time:.2f}s: {error_msg}")
+
+            return QueryResult(
+                data=[],
+                row_count=0,
+                execution_time=execution_time,
+                query=query,
+                columns=[],
+                success=False,
+                error_message=error_msg
+            )
+
     def _create_connection(self) -> snowflake.connector.SnowflakeConnection:
         """
         Create a new Snowflake connection.

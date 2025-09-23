@@ -72,34 +72,47 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 ## 📋 First Steps
 
-### 1. Test Database Connection
+### 1. Test Snowflake Connection
 ```bash
-curl http://localhost:8000/health
+curl http://localhost:8000/api/snowflake/health
 ```
 
 Expected response:
 ```json
 {
-  "status": "healthy",
-  "timestamp": "2024-01-15T10:30:00Z",
-  "database_connected": true,
-  "version": "0.1.0"
+  "success": true,
+  "connection_time": 6.85,
+  "current_user": "DSOSA",
+  "current_database": "DATA_SCIENCE"
 }
 ```
 
-### 2. Explore API Documentation
+### 2. Download Portfolio Data (Easy Way!)
+```bash
+# Interactive portfolio data downloader
+python download_portfolio.py
+```
+
+**Options available:**
+- Quick sample (100 rows) - ~30 seconds
+- Medium dataset (500 rows) - ~1 minute
+- Large dataset (2,500 rows) - ~3 minutes
+- Custom size
+
+**Data saved to:** `data/portfolio_data_[rows]_[timestamp].csv`
+
+### 3. Explore API Documentation
 Visit http://localhost:8000/docs to see:
 - Available endpoints
 - Request/response schemas
 - Interactive API testing
 
-### 3. Test Basic Endpoints
+### 4. Test Snowflake Endpoints
 ```bash
-# List customers (when implemented)
-curl http://localhost:8000/api/customers/
-
-# Get customer details (when implemented)
-curl http://localhost:8000/api/customers/CUST001
+# Test basic query
+curl -X POST "http://localhost:8000/api/snowflake/query" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "SELECT CURRENT_USER(), CURRENT_DATABASE()"}'
 ```
 
 ## 🛠️ Development Workflow

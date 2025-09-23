@@ -154,6 +154,30 @@ customer_products (customer_id, product_id, relationship_type, start_date, ...)
 - **Snowflake Health Check**: http://localhost:8000/api/snowflake/health
 - **Snowflake Configuration**: http://localhost:8000/api/snowflake/config
 
+### 📥 Download Portfolio Data (Ready to Use!)
+
+Once your Snowflake connection is working, you can immediately start downloading portfolio data:
+
+```bash
+# Interactive portfolio data downloader
+python download_portfolio.py
+```
+
+**Features:**
+- ✅ Download 100-5000+ portfolio records from `RESULTADO.PRIVALBANK.TG_FACT_PORTFOLIO_SECURITY`
+- ✅ Automatic batch processing (avoids SSL certificate issues)
+- ✅ Multiple size options with time estimates
+- ✅ Saves to `data/` folder with timestamps
+- ✅ Includes portfolio holdings, market values, customer info, and P&L data
+
+**Example output:**
+```
+📁 File: data/portfolio_data_2500rows_20250923_074010.csv
+📊 Rows: 2,500
+📏 Size: 0.39 MB
+📈 Unique portfolios: 244, Unique customers: 221
+```
+
 ### 🏔️ Snowflake Features
 
 The project includes comprehensive Snowflake integration with:
